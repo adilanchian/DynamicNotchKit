@@ -53,25 +53,41 @@ struct NotchView<Expanded, CompactLeading, CompactTrailing>: View where Expanded
         (compactTrailingWidth - compactLeadingWidth) / 2
     }
 
+    @ViewBuilder
+    private func silhouetteFrame<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 0.5)
+            .frame(
+                width: dynamicNotch.state != .hidden ? nil : minWidth,
+                height: dynamicNotch.state != .hidden ? nil : dynamicNotch.notchSize.height
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
+            // Background: liquid glass on macOS 26+ (when enabled), else solid black.
+            // Liquid glass must be applied directly to a shape (not masked) or its
+            // backdrop sampling breaks, so we render it as an unmasked sibling.
+            if useLiquidGlassBackground {
+                liquidGlassBackground
+            }
+
             notchContent()
                 .background {
-                    Rectangle()
-                        .foregroundStyle(.black)
-                        .padding(-50) // The opening/closing animation can overshoot, so this makes sure that it's still black
+                    if !useLiquidGlassBackground {
+                        Rectangle()
+                            .foregroundStyle(.black)
+                            .padding(-50) // The opening/closing animation can overshoot, so this makes sure that it's still black
+                    }
                 }
                 .mask {
-                    NotchShape(
-                        topCornerRadius: topCornerRadius,
-                        bottomCornerRadius: bottomCornerRadius
-                    )
-                    .padding(.horizontal, 0.5)
-                    .frame(
-                        width: dynamicNotch.state != .hidden ? nil : minWidth,
-                        height: dynamicNotch.state != .hidden ? nil : dynamicNotch.notchSize.height
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    silhouetteFrame {
+                        NotchShape(
+                            topCornerRadius: topCornerRadius,
+                            bottomCornerRadius: bottomCornerRadius
+                        )
+                    }
                 }
 
             if let overlay = dynamicNotch.unmaskedOverlay {
@@ -85,6 +101,29 @@ struct NotchView<Expanded, CompactLeading, CompactTrailing>: View where Expanded
         }
         .offset(x: xOffset)
         .animation(.smooth, value: [compactLeadingWidth, compactTrailingWidth])
+    }
+
+    private var useLiquidGlassBackground: Bool {
+        if #available(macOS 26.0, *) {
+            return dynamicNotch.useLiquidGlass
+        }
+        return false
+    }
+
+    @ViewBuilder
+    private var liquidGlassBackground: some View {
+        if #available(macOS 26.0, *) {
+            silhouetteFrame {
+                Color.clear
+                    .glassEffect(
+                        .regular,
+                        in: NotchShape(
+                            topCornerRadius: topCornerRadius,
+                            bottomCornerRadius: bottomCornerRadius
+                        )
+                    )
+            }
+        }
     }
 
     private func notchContent() -> some View {

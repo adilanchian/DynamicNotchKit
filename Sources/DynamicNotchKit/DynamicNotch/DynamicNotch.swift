@@ -92,6 +92,13 @@ public final class DynamicNotch<Expanded, CompactLeading, CompactTrailing>: Obse
         unmaskedOverlay = nil
     }
 
+    /// When `true` and running on macOS 26+, the notch panel background is
+    /// rendered with Apple's Liquid Glass `.glassEffect(_:in:)` applied
+    /// directly to a `NotchShape` — the wallpaper and windows behind the
+    /// notch are sampled and refracted. Falls back to the solid-black
+    /// background on older OSes. Default: `false`.
+    @Published public var useLiquidGlass: Bool = false
+
     /// Notch Properties
     @Published private(set) var state: DynamicNotchState = .hidden
     @Published private(set) var notchSize: CGSize = .zero

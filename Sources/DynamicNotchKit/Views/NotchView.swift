@@ -11,6 +11,7 @@ struct NotchView<Expanded, CompactLeading, CompactTrailing>: View where Expanded
     @ObservedObject private var dynamicNotch: DynamicNotch<Expanded, CompactLeading, CompactTrailing>
     @State private var compactLeadingWidth: CGFloat = 0
     @State private var compactTrailingWidth: CGFloat = 0
+    @State private var contentSize: CGSize = .zero
     private let safeAreaInset: CGFloat = 15
 
     init(dynamicNotch: DynamicNotch<Expanded, CompactLeading, CompactTrailing>) {
@@ -89,6 +90,7 @@ struct NotchView<Expanded, CompactLeading, CompactTrailing>: View where Expanded
                         )
                     }
                 }
+                .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }
 
             if let overlay = dynamicNotch.unmaskedOverlay {
                 overlay
@@ -112,17 +114,17 @@ struct NotchView<Expanded, CompactLeading, CompactTrailing>: View where Expanded
 
     @ViewBuilder
     private var liquidGlassBackground: some View {
-        if #available(macOS 26.0, *) {
-            silhouetteFrame {
-                Color.clear
-                    .glassEffect(
-                        .regular,
-                        in: NotchShape(
-                            topCornerRadius: topCornerRadius,
-                            bottomCornerRadius: bottomCornerRadius
-                        )
+        if #available(macOS 26.0, *), dynamicNotch.state == .expanded, contentSize.width > 0, contentSize.height > 0 {
+            Color.clear
+                .glassEffect(
+                    .regular,
+                    in: NotchShape(
+                        topCornerRadius: topCornerRadius,
+                        bottomCornerRadius: bottomCornerRadius
                     )
-            }
+                )
+                .frame(width: contentSize.width, height: contentSize.height)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 

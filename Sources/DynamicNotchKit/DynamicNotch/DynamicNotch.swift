@@ -78,6 +78,20 @@ public final class DynamicNotch<Expanded, CompactLeading, CompactTrailing>: Obse
     @Published var disableCompactLeading: Bool = false
     @Published var disableCompactTrailing: Bool = false
 
+    /// Unmasked overlay painted on top of the notch silhouette. Use for effects
+    /// (glows, halos, strokes) that must render past the notch edges — the rest
+    /// of the notch content is masked to the silhouette, but this is not.
+    @Published public var unmaskedOverlay: AnyView?
+
+    /// Sets the unmasked overlay content. Pass `nil` via ``clearUnmaskedOverlay()`` to remove.
+    public func setUnmaskedOverlay(@ViewBuilder _ content: () -> some View) {
+        unmaskedOverlay = AnyView(content())
+    }
+
+    public func clearUnmaskedOverlay() {
+        unmaskedOverlay = nil
+    }
+
     /// Notch Properties
     @Published private(set) var state: DynamicNotchState = .hidden
     @Published private(set) var notchSize: CGSize = .zero
